@@ -13,10 +13,7 @@ export function NetworkStatus() {
     const gun = getGun();
     if (!gun) return;
 
-    // Gun doesn't have a built-in simple "online" event for all peers, 
-    // but we can check the mesh connectivity status.
     const interval = setInterval(() => {
-      // Very basic connectivity check for Gun relays
       const isOnline = navigator.onLine;
       setStatus(isOnline ? 'online' : 'offline');
     }, 5000);
@@ -42,7 +39,7 @@ export function NetworkStatus() {
       ) : (
         <>
           <Globe className="w-3 h-3 animate-pulse text-muted-foreground" />
-          <span className="text-muted-foreground">Connecting...</span>
+          <span className="text-muted-foreground">Conectando...</span>
         </>
       )}
     </div>

@@ -43,9 +43,9 @@ export function CartView({ items, onUpdate, onRemove, onBack, onScanMore }: Cart
           className="flex items-center text-xs font-bold text-muted-foreground hover:text-white transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          BACK
+          VOLTAR
         </button>
-        <h2 className="text-lg font-black text-white uppercase tracking-tighter">Shopping List</h2>
+        <h2 className="text-lg font-black text-white uppercase tracking-tighter">Lista de Compras</h2>
       </div>
 
       {items.length === 0 ? (
@@ -54,12 +54,12 @@ export function CartView({ items, onUpdate, onRemove, onBack, onScanMore }: Cart
             <ShoppingBag className="w-8 h-8 text-muted-foreground" />
           </div>
           <div className="space-y-1">
-            <p className="font-bold text-white">Your list is empty</p>
-            <p className="text-xs text-muted-foreground">Scan products to start piling up</p>
+            <p className="font-bold text-white">Sua lista está vazia</p>
+            <p className="text-xs text-muted-foreground">Escaneie produtos para começar a preencher</p>
           </div>
           <Button onClick={onScanMore} className="mt-2 bg-primary hover:bg-primary/90 rounded-xl font-bold">
             <Scan className="w-4 h-4 mr-2" />
-            Start Scanning
+            Começar Escaneamento
           </Button>
         </div>
       ) : (
@@ -104,13 +104,13 @@ export function CartView({ items, onUpdate, onRemove, onBack, onScanMore }: Cart
                   </div>
 
                   <div className="flex-1 flex items-center relative">
-                    <DollarSign className="absolute left-3 w-3 h-3 text-accent" />
+                    <span className="absolute left-3 text-xs font-bold text-accent">R$</span>
                     <Input 
                       type="number" 
                       step="0.01"
                       value={item.price}
                       onChange={(e) => onUpdate(item.ean, { price: parseFloat(e.target.value) || 0 })}
-                      className="pl-7 h-10 glass bg-accent/5 border-accent/20 focus:ring-accent text-right font-bold text-white"
+                      className="pl-8 h-10 glass bg-accent/5 border-accent/20 focus:ring-accent text-right font-bold text-white"
                     />
                   </div>
                 </div>
@@ -120,14 +120,14 @@ export function CartView({ items, onUpdate, onRemove, onBack, onScanMore }: Cart
 
           <div className="glass p-5 rounded-3xl space-y-4 border-accent/20">
             <div className="flex justify-between items-end">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Estimated Total</span>
-              <span className="text-3xl font-black text-accent">${total.toFixed(2)}</span>
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Total Estimado</span>
+              <span className="text-3xl font-black text-accent">R${total.toFixed(2)}</span>
             </div>
             
             <div className="flex items-start gap-2 p-3 bg-accent/5 rounded-xl border border-accent/10">
                <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                <p className="text-[10px] text-accent/80 leading-relaxed">
-                 Price adjustments are automatically contributed to the decentralized network to maintain real-time accuracy.
+                 Ajustes de preço são contribuídos automaticamente para a rede descentralizada para manter a precisão em tempo real.
                </p>
             </div>
 
@@ -136,7 +136,7 @@ export function CartView({ items, onUpdate, onRemove, onBack, onScanMore }: Cart
               className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-bold text-lg"
             >
               <Plus className="w-5 h-5 mr-2" />
-              Scan More Items
+              Escanear Mais Itens
             </Button>
           </div>
         </div>

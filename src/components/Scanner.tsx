@@ -52,7 +52,7 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
         setIsInitializing(false);
       } catch (err: any) {
         console.error("Scanner Error:", err);
-        setError("Could not access camera. Please ensure permissions are granted.");
+        setError("Não foi possível acessar a câmera. Certifique-se de que as permissões foram concedidas.");
         setIsInitializing(false);
       }
     };
@@ -81,14 +81,14 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
         {isInitializing && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-card gap-4">
             <RefreshCw className="w-10 h-10 animate-spin text-accent" />
-            <p className="text-sm font-medium">Powering up optics...</p>
+            <p className="text-sm font-medium">Iniciando óptica...</p>
           </div>
         )}
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-card p-6 text-center gap-4">
             <Camera className="w-12 h-12 text-muted-foreground" />
             <p className="text-sm text-destructive font-medium">{error}</p>
-            <Button variant="outline" onClick={onClose} className="rounded-xl">Close</Button>
+            <Button variant="outline" onClick={onClose} className="rounded-xl">Fechar</Button>
           </div>
         )}
       </div>
@@ -104,9 +104,9 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">NFC-e</span>
            </div>
         </div>
-        <p className="text-white font-medium text-lg">Align Barcode or Invoice QR</p>
+        <p className="text-white font-medium text-lg">Alinhe o código ou QR da Nota</p>
         <p className="text-muted-foreground text-xs leading-relaxed max-w-[240px]">
-          Position the product barcode or the QR code found on the bottom of your grocery receipt.
+          Posicione o código de barras do produto ou o QR Code encontrado no rodapé do seu cupom fiscal.
         </p>
       </div>
 

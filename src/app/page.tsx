@@ -77,8 +77,8 @@ export default function Home() {
       } else {
         toast({
           variant: "destructive",
-          title: "Scrape Failed",
-          description: result.error || "Could not read invoice data."
+          title: "Falha na Leitura",
+          description: result.error || "Não foi possível ler os dados da nota fiscal."
         });
         setView('home');
       }
@@ -101,7 +101,7 @@ export default function Home() {
       gun.get(GUN_NAMESPACE).get('products').get(item.ean).put({
         ean: item.ean,
         name: item.name,
-        brand: 'Invoice verified'
+        brand: 'Nota Fiscal verificada'
       });
 
       // 2. Add verified price submission
@@ -119,7 +119,7 @@ export default function Home() {
         name: item.name,
         price: item.price,
         quantity: 1,
-        brand: 'Invoice verified'
+        brand: 'Nota Fiscal verificada'
       });
     });
 
@@ -127,8 +127,8 @@ export default function Home() {
 
     if (savedCount > 0) {
       toast({
-        title: "Verified Data Injected",
-        description: `Successfully fed ${savedCount} verified price points and added to your list.`
+        title: "Dados Verificados Inseridos",
+        description: `Sucesso! Adicionamos ${savedCount} pontos de preço verificados à rede e à sua lista.`
       });
     }
   };
@@ -142,8 +142,8 @@ export default function Home() {
       return [...prev, item];
     });
     toast({
-      title: "Added to List",
-      description: `${item.name} is now in your shopping list.`
+      title: "Adicionado à Lista",
+      description: `${item.name} agora está na sua lista de compras.`
     });
     setView('home');
   };
@@ -228,9 +228,9 @@ export default function Home() {
             </div>
             
             <div className="space-y-3">
-              <h2 className="text-2xl font-bold text-white">Your Shopping Companion</h2>
+              <h2 className="text-2xl font-bold text-white">Seu Companheiro de Compras</h2>
               <p className="text-muted-foreground text-sm max-w-[280px] leading-relaxed">
-                Scan products to build your list and help the community keep prices honest.
+                Escaneie produtos para montar sua lista e ajude a comunidade a manter os preços honestos.
               </p>
             </div>
 
@@ -239,7 +239,7 @@ export default function Home() {
                 onClick={() => setView('scanning')}
                 className="w-full h-16 text-lg font-bold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20"
               >
-                Scan Product / Receipt
+                Escanear Produto / Nota
               </Button>
               
               {cart.length > 0 && (
@@ -248,7 +248,7 @@ export default function Home() {
                   className="w-full h-14 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-2xl font-bold"
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
-                  View List (${cart.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)})
+                  Ver Lista (R${cart.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)})
                 </Button>
               )}
 
@@ -257,7 +257,7 @@ export default function Home() {
                 className="w-full h-14 glass text-muted-foreground hover:text-white rounded-2xl"
               >
                 <History className="w-4 h-4 mr-2" />
-                Network History
+                Histórico da Rede
               </Button>
             </div>
           </div>
@@ -273,8 +273,8 @@ export default function Home() {
                 <Receipt className="w-10 h-10 text-accent" />
              </div>
              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-white">Scraping SEFAZ Invoice</h3>
-                <p className="text-muted-foreground text-sm">Bypassing CORS filters and extracting verified data points...</p>
+                <h3 className="text-xl font-bold text-white">Processando Nota Fiscal</h3>
+                <p className="text-muted-foreground text-sm">Contornando filtros e extraindo dados verificados...</p>
              </div>
              <Loader2 className="w-6 h-6 animate-spin text-accent" />
           </div>
@@ -287,7 +287,7 @@ export default function Home() {
               className="flex items-center text-xs font-bold text-muted-foreground hover:text-white transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
-              BACK TO HOME
+              VOLTAR AO INÍCIO
             </button>
 
             <div className="glass p-6 rounded-2xl space-y-4">
@@ -296,8 +296,8 @@ export default function Home() {
                   <CheckCircle className="w-6 h-6 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">Invoice Processed</h3>
-                  <p className="text-xs text-muted-foreground">{scrapedData.filter(i => i.ean).length} verified items added</p>
+                  <h3 className="font-bold text-white">Nota Processada</h3>
+                  <p className="text-xs text-muted-foreground">{scrapedData.filter(i => i.ean).length} itens verificados adicionados</p>
                 </div>
               </div>
               
@@ -306,16 +306,16 @@ export default function Home() {
                   <div key={i} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
                     <div className="flex flex-col max-w-[70%]">
                       <span className="text-xs font-bold text-white truncate">{item.name}</span>
-                      <span className="text-[10px] text-muted-foreground">{item.ean || 'No EAN found'}</span>
+                      <span className="text-[10px] text-muted-foreground">{item.ean || 'Sem EAN'}</span>
                     </div>
-                    <span className="text-sm font-black text-accent">${item.price.toFixed(2)}</span>
+                    <span className="text-sm font-black text-accent">R${item.price.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="pt-2">
                 <Button onClick={() => setView('cart')} className="w-full bg-primary hover:bg-primary/90 rounded-xl font-bold flex items-center justify-center gap-2">
-                  Go to List <ArrowRight className="w-4 h-4" />
+                  Ir para Lista <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -329,7 +329,7 @@ export default function Home() {
               className="flex items-center text-xs font-bold text-muted-foreground hover:text-white transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
-              BACK TO HOME
+              VOLTAR AO INÍCIO
             </button>
 
             {product ? (
@@ -352,15 +352,15 @@ export default function Home() {
                    <AlertCircle className="w-8 h-8 text-accent" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Product Not Found</h3>
-                  <p className="text-muted-foreground text-sm">We don't have data for <span className="text-accent">{activeEan}</span> yet.</p>
+                  <h3 className="text-lg font-bold text-white">Produto não encontrado</h3>
+                  <p className="text-muted-foreground text-sm">Ainda não temos dados para <span className="text-accent">{activeEan}</span>.</p>
                 </div>
                 <Button 
                   onClick={() => setView('submitting')}
                   className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add First Price
+                  Adicionar Primeiro Preço
                 </Button>
               </div>
             )}
@@ -374,12 +374,12 @@ export default function Home() {
               className="flex items-center text-xs font-bold text-muted-foreground hover:text-white transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
-              BACK TO DETAILS
+              VOLTAR PARA DETALHES
             </button>
 
             <div className="space-y-2">
-              <h2 className="text-2xl font-black text-white">Contribute Data</h2>
-              <p className="text-muted-foreground text-sm">Your entry helps maintain the network's accuracy.</p>
+              <h2 className="text-2xl font-black text-white">Contribuir com Dados</h2>
+              <p className="text-muted-foreground text-sm">Sua entrada ajuda a manter a precisão da rede.</p>
             </div>
 
             <PriceForm 
@@ -406,7 +406,7 @@ export default function Home() {
         <footer className="mt-12 text-center">
           <div className="inline-flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
             <Globe className="w-3 h-3" />
-            P2P Price Mesh Active
+            Rede P2P Price Ativa
           </div>
         </footer>
       )}

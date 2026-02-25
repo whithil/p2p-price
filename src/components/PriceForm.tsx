@@ -26,7 +26,7 @@ export function PriceForm({ ean, initialName, initialBrand, onSuccess }: PriceFo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!price || isNaN(parseFloat(price))) {
-      toast({ title: "Invalid price", description: "Please enter a valid numeric price." });
+      toast({ title: "Preço inválido", description: "Por favor, insira um valor numérico válido." });
       return;
     }
 
@@ -37,14 +37,12 @@ export function PriceForm({ ean, initialName, initialBrand, onSuccess }: PriceFo
     const priceValue = parseFloat(price);
 
     try {
-      // 1. Update product metadata (only if not existing or slightly flexible)
       gun.get(GUN_NAMESPACE).get('products').get(ean).put({
         ean,
         name: name || initialName,
         brand: brand || initialBrand
       });
 
-      // 2. Add price submission
       const submissionId = `sub_${timestamp}_${deviceId.substring(0, 5)}`;
       gun.get(GUN_NAMESPACE).get('prices').get(ean).get(submissionId).put({
         value: priceValue,
@@ -53,14 +51,14 @@ export function PriceForm({ ean, initialName, initialBrand, onSuccess }: PriceFo
       });
 
       toast({
-        title: "Submission successful!",
-        description: `Price of $${priceValue.toFixed(2)} recorded for ${name}.`
+        title: "Envio realizado com sucesso!",
+        description: `O preço de R$${priceValue.toFixed(2)} foi registrado para ${name}.`
       });
       
       onSuccess();
     } catch (err) {
       console.error(err);
-      toast({ title: "Error submitting price", variant: "destructive" });
+      toast({ title: "Erro ao enviar preço", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -72,12 +70,12 @@ export function PriceForm({ ean, initialName, initialBrand, onSuccess }: PriceFo
         {!initialName && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Product Name</Label>
+              <Label htmlFor="name" className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Nome do Produto</Label>
               <div className="relative">
                 <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="name"
-                  placeholder="e.g. Organic Whole Milk" 
+                  placeholder="ex: Leite Integral Orgânico" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)}
                   className="pl-10 glass focus:ring-accent/50"
@@ -86,12 +84,12 @@ export function PriceForm({ ean, initialName, initialBrand, onSuccess }: PriceFo
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="brand" className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Brand</Label>
+              <Label htmlFor="brand" className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Marca</Label>
               <div className="relative">
                 <ShoppingBag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="brand"
-                  placeholder="e.g. Clover Farms" 
+                  placeholder="ex: Fazenda Trevo" 
                   value={brand} 
                   onChange={(e) => setBrand(e.target.value)}
                   className="pl-10 glass focus:ring-accent/50"
@@ -103,14 +101,14 @@ export function PriceForm({ ean, initialName, initialBrand, onSuccess }: PriceFo
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="price" className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Current Price Observed</Label>
+          <Label htmlFor="price" className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Preço Observado</Label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-accent" />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-accent font-bold">R$</span>
             <Input 
               id="price"
               type="number" 
               step="0.01" 
-              placeholder="0.00" 
+              placeholder="0,00" 
               value={price} 
               onChange={(e) => setPrice(e.target.value)}
               className="pl-10 text-xl font-bold h-14 glass focus:ring-accent"
@@ -126,14 +124,14 @@ export function PriceForm({ ean, initialName, initialBrand, onSuccess }: PriceFo
         disabled={isSubmitting}
       >
         {isSubmitting ? (
-          <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting...</>
+          <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Enviando...</>
         ) : (
-          <><CheckCircle2 className="mr-2 h-5 w-5" /> Confirm Price Update</>
+          <><CheckCircle2 className="mr-2 h-5 w-5" /> Confirmar Atualização</>
         )}
       </Button>
       
       <p className="text-[10px] text-center text-muted-foreground">
-        Each submission is anonymous and helps build a decentralized price index.
+        Cada envio é anônimo e ajuda a construir um índice de preços descentralizado.
       </p>
     </form>
   );

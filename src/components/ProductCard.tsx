@@ -29,29 +29,29 @@ export function ProductCard({ ean, name, brand, priceData, onAddToCart }: Produc
           <div className="flex gap-1">
              <div className="flex items-center text-[10px] text-muted-foreground gap-1">
                 <Users className="w-3 h-3" />
-                <span>{count} contributors</span>
+                <span>{count} {count === 1 ? 'contribuidor' : 'contribuidores'}</span>
              </div>
           </div>
         </div>
-        <CardTitle className="text-xl font-bold tracking-tight">{name || 'Unnamed Product'}</CardTitle>
+        <CardTitle className="text-xl font-bold tracking-tight">{name || 'Produto sem Nome'}</CardTitle>
         <CardDescription className="flex items-center gap-1.5 text-accent/80">
           <Package className="w-3.5 h-3.5" />
-          {brand || 'Generic Brand'}
+          {brand || 'Marca Genérica'}
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4 border-t border-white/5 space-y-6">
         <div className="flex flex-col gap-4">
           <div className="flex items-end justify-between">
             <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Network Price</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Preço na Rede</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-white">${consensus.toFixed(2)}</span>
+                <span className="text-3xl font-black text-white">R${consensus.toFixed(2)}</span>
               </div>
             </div>
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1 text-accent font-bold bg-accent/10 px-2 py-1 rounded-md text-sm">
                 <TrendingUp className="w-4 h-4" />
-                <span>Live Pulse</span>
+                <span>Pulso ao Vivo</span>
               </div>
             </div>
           </div>
@@ -60,15 +60,15 @@ export function ProductCard({ ean, name, brand, priceData, onAddToCart }: Produc
             <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/5">
               <Tag className="w-4 h-4 text-accent" />
               <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground uppercase">Min Obs.</span>
-                <span className="text-sm font-semibold">${prices.length > 0 ? Math.min(...prices).toFixed(2) : '-'}</span>
+                <span className="text-[10px] text-muted-foreground uppercase">Mín. Obs.</span>
+                <span className="text-sm font-semibold">{prices.length > 0 ? `R$${Math.min(...prices).toFixed(2)}` : '-'}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/5">
                <TrendingUp className="w-4 h-4 text-accent" />
                <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground uppercase">Max Obs.</span>
-                <span className="text-sm font-semibold">${prices.length > 0 ? Math.max(...prices).toFixed(2) : '-'}</span>
+                <span className="text-[10px] text-muted-foreground uppercase">Máx. Obs.</span>
+                <span className="text-sm font-semibold">{prices.length > 0 ? `R$${Math.max(...prices).toFixed(2)}` : '-'}</span>
               </div>
             </div>
           </div>
@@ -80,7 +80,7 @@ export function ProductCard({ ean, name, brand, priceData, onAddToCart }: Produc
             className="w-full h-14 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-accent/20"
           >
             <Plus className="w-5 h-5" />
-            Add to Shopping List
+            Adicionar à Lista de Compras
           </Button>
         </div>
       </CardContent>
