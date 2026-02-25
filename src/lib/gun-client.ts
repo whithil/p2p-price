@@ -1,5 +1,5 @@
 
-import Gun from 'gun';
+import Gun from 'gun/gun';
 
 // Public relays - in a real app, you might use your own
 const RELAYS = [

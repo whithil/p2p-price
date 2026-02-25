@@ -1,6 +1,9 @@
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: "export",
+  basePath: '/p2p-price',
+  assetPrefix: '/p2p-price/',
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
@@ -9,6 +12,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
