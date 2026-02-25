@@ -4,10 +4,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Button } from './ui/button';
-import { Camera, X, RefreshCw } from 'lucide-react';
+import { Camera, X, RefreshCw, QrCode, Barcode } from 'lucide-react';
 
 interface ScannerProps {
-  onScan: (ean: string) => void;
+  onScan: (data: string, type: 'ean' | 'nfce') => void;
   onClose: () => void;
 }
 
@@ -24,17 +24,27 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
         scannerRef.current = html5QrCode;
 
         const config = {
-          fps: 10,
-          qrbox: { width: 250, height: 150 },
+          fps: 15,
+          qrbox: { width: 280, height: 200 },
           aspectRatio: 1.0,
-          formatsToSupport: [Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8]
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13, 
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.QR_CODE
+          ]
         };
 
         await html5QrCode.start(
           { facingMode: "environment" },
           config,
           (decodedText) => {
-            onScan(decodedText);
+            const isNfce = decodedText.startsWith('http') && (
+              decodedText.includes('sefaz') || 
+              decodedText.includes('fazenda') || 
+              decodedText.includes('nfce')
+            );
+            
+            onScan(decodedText, isNfce ? 'nfce' : 'ean');
             stopScanner();
           },
           () => {} // silent on failure
@@ -66,33 +76,45 @@ export function Scanner({ onScan, onClose }: ScannerProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-4">
-      <div className="relative w-full max-w-md aspect-square overflow-hidden rounded-2xl bg-card border border-white/10 scanner-overlay">
+      <div className="relative w-full max-w-md aspect-square overflow-hidden rounded-3xl bg-card border border-white/10 scanner-overlay">
         <div id={scannerId} className="w-full h-full" />
         {isInitializing && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-card gap-4">
             <RefreshCw className="w-10 h-10 animate-spin text-accent" />
-            <p className="text-sm font-medium">Initializing Camera...</p>
+            <p className="text-sm font-medium">Powering up optics...</p>
           </div>
         )}
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-card p-6 text-center gap-4">
             <Camera className="w-12 h-12 text-muted-foreground" />
             <p className="text-sm text-destructive font-medium">{error}</p>
-            <Button variant="outline" onClick={onClose}>Close</Button>
+            <Button variant="outline" onClick={onClose} className="rounded-xl">Close</Button>
           </div>
         )}
       </div>
 
-      <div className="mt-8 flex flex-col items-center gap-2">
-        <p className="text-white font-medium">Align EAN barcode inside the frame</p>
-        <p className="text-muted-foreground text-xs uppercase tracking-widest">Scanning...</p>
+      <div className="mt-8 flex flex-col items-center gap-3 text-center px-6">
+        <div className="flex gap-4 mb-2">
+           <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+              <Barcode className="w-4 h-4 text-primary" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">EAN</span>
+           </div>
+           <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+              <QrCode className="w-4 h-4 text-accent" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">NFC-e</span>
+           </div>
+        </div>
+        <p className="text-white font-medium text-lg">Align Barcode or Invoice QR</p>
+        <p className="text-muted-foreground text-xs leading-relaxed max-w-[240px]">
+          Position the product barcode or the QR code found on the bottom of your grocery receipt.
+        </p>
       </div>
 
       <Button 
         onClick={onClose}
         variant="secondary"
         size="icon"
-        className="absolute top-6 right-6 rounded-full glass"
+        className="absolute top-6 right-6 rounded-full glass hover:bg-white/20 transition-all"
       >
         <X className="w-5 h-5" />
       </Button>

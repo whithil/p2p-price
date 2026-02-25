@@ -6,7 +6,7 @@ import { NetworkStatus } from '@/components/NetworkStatus';
 import { Scanner } from '@/components/Scanner';
 import { ProductCard } from '@/components/ProductCard';
 import { PriceForm } from '@/components/PriceForm';
-import { getGun, GUN_NAMESPACE } from '@/lib/gun-client';
+import { getGun, GUN_NAMESPACE, getDeviceId } from '@/lib/gun-client';
 import { Button } from '@/components/ui/button';
 import { 
   Scan, 
@@ -15,15 +15,22 @@ import {
   History, 
   Plus, 
   AlertCircle,
-  BarChart3
+  BarChart3,
+  Loader2,
+  CheckCircle,
+  Receipt
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
+import { scrapeNfce, type ScrapedProduct } from './actions/scrape-nfce';
 
 export default function Home() {
-  const [view, setView] = useState<'home' | 'scanning' | 'details' | 'submitting'>('home');
+  const [view, setView] = useState<'home' | 'scanning' | 'details' | 'submitting' | 'nfce_processing' | 'nfce_summary'>('home');
   const [activeEan, setActiveEan] = useState<string | null>(null);
   const [product, setProduct] = useState<any>(null);
   const [prices, setPrices] = useState<Record<string, any>>({});
+  const [scrapedData, setScrapedData] = useState<ScrapedProduct[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!activeEan) return;
@@ -31,13 +38,11 @@ export default function Home() {
     const gun = getGun();
     if (!gun) return;
 
-    // Listen for product updates
     const productRef = gun.get(GUN_NAMESPACE).get('products').get(activeEan);
     productRef.on((data: any) => {
       if (data) setProduct(data);
     });
 
-    // Listen for price updates
     const priceRef = gun.get(GUN_NAMESPACE).get('prices').get(activeEan);
     priceRef.map().on((price: any, id: string) => {
       if (price) {
@@ -51,11 +56,63 @@ export default function Home() {
     };
   }, [activeEan]);
 
-  const handleScan = (ean: string) => {
-    setActiveEan(ean);
-    setProduct(null);
-    setPrices({});
-    setView('details');
+  const handleScan = async (data: string, type: 'ean' | 'nfce') => {
+    if (type === 'ean') {
+      setActiveEan(data);
+      setProduct(null);
+      setPrices({});
+      setView('details');
+    } else {
+      setView('nfce_processing');
+      const result = await scrapeNfce(data);
+      if (result.success && result.products) {
+        setScrapedData(result.products);
+        processScrapedProducts(result.products);
+        setView('nfce_summary');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Scrape Failed",
+          description: result.error || "Could not read invoice data."
+        });
+        setView('home');
+      }
+    }
+  };
+
+  const processScrapedProducts = (items: ScrapedProduct[]) => {
+    const gun = getGun();
+    const deviceId = getDeviceId();
+    const timestamp = Date.now();
+    let savedCount = 0;
+
+    items.forEach((item) => {
+      if (!item.ean) return;
+      savedCount++;
+
+      // 1. Ensure product metadata exists
+      gun.get(GUN_NAMESPACE).get('products').get(item.ean).put({
+        ean: item.ean,
+        name: item.name,
+        brand: 'Invoice verified'
+      });
+
+      // 2. Add verified price submission
+      const submissionId = `nfce_${timestamp}_${deviceId.substring(0, 5)}_${Math.random().toString(36).substring(7)}`;
+      gun.get(GUN_NAMESPACE).get('prices').get(item.ean).get(submissionId).put({
+        value: item.price,
+        timestamp,
+        deviceId,
+        verified: true
+      });
+    });
+
+    if (savedCount > 0) {
+      toast({
+        title: "Verified Data Injected",
+        description: `Successfully fed ${savedCount} verified price points into the P2P network.`
+      });
+    }
   };
 
   const handleReset = () => {
@@ -63,11 +120,11 @@ export default function Home() {
     setActiveEan(null);
     setProduct(null);
     setPrices({});
+    setScrapedData([]);
   };
 
   return (
     <div className="min-h-screen flex flex-col max-w-md mx-auto relative px-4 pb-10">
-      {/* Header */}
       <header className="flex items-center justify-between py-6">
         <div className="flex flex-col">
           <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2">
@@ -93,7 +150,7 @@ export default function Home() {
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-white">Compare Smarter</h2>
               <p className="text-muted-foreground text-sm max-w-[280px] leading-relaxed">
-                Scan any barcode to reveal a decentralized, troll-resistant price consensus from shoppers like you.
+                Scan barcodes or grocery receipt QR codes to feed the decentralized price consensus.
               </p>
             </div>
 
@@ -102,14 +159,14 @@ export default function Home() {
                 onClick={() => setView('scanning')}
                 className="w-full h-16 text-lg font-bold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20"
               >
-                Start Scanning
+                Scan Product / Receipt
               </Button>
               <Button 
                 variant="outline"
                 className="w-full h-14 glass text-muted-foreground hover:text-white rounded-2xl"
               >
                 <History className="w-4 h-4 mr-2" />
-                Recent Scans
+                Network History
               </Button>
             </div>
           </div>
@@ -117,6 +174,59 @@ export default function Home() {
 
         {view === 'scanning' && (
           <Scanner onScan={handleScan} onClose={() => setView('home')} />
+        )}
+
+        {view === 'nfce_processing' && (
+          <div className="flex-1 flex flex-col items-center justify-center text-center gap-6">
+             <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center animate-pulse">
+                <Receipt className="w-10 h-10 text-accent" />
+             </div>
+             <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white">Scraping SEFAZ Invoice</h3>
+                <p className="text-muted-foreground text-sm">Bypassing CORS filters and extracting verified data points...</p>
+             </div>
+             <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          </div>
+        )}
+
+        {view === 'nfce_summary' && (
+          <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+            <button 
+              onClick={handleReset}
+              className="flex items-center text-xs font-bold text-muted-foreground hover:text-white transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              BACK TO HOME
+            </button>
+
+            <div className="glass p-6 rounded-2xl space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                  <CheckCircle className="w-6 h-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Invoice Processed</h3>
+                  <p className="text-xs text-muted-foreground">{scrapedData.filter(i => i.ean).length} verified items added</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+                {scrapedData.map((item, i) => (
+                  <div key={i} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                    <div className="flex flex-col max-w-[70%]">
+                      <span className="text-xs font-bold text-white truncate">{item.name}</span>
+                      <span className="text-[10px] text-muted-foreground">{item.ean || 'No EAN found'}</span>
+                    </div>
+                    <span className="text-sm font-black text-accent">${item.price.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Button onClick={handleReset} className="w-full bg-primary hover:bg-primary/90 rounded-xl font-bold">
+                Finish Submission
+              </Button>
+            </div>
+          </div>
         )}
 
         {view === 'details' && (
@@ -168,7 +278,7 @@ export default function Home() {
                 <div className="glass p-4 rounded-xl space-y-4">
                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price Intelligence</h4>
                    <p className="text-xs text-muted-foreground leading-relaxed">
-                     Our algorithm uses MAD filtering and Gaussian weighting to exclude outliers and troll submissions, ensuring the consensus price remains reliable.
+                     Our algorithm uses MAD filtering and Gaussian weighting to exclude outliers, ensuring the consensus price remains reliable.
                    </p>
                 </div>
               </div>
@@ -204,7 +314,7 @@ export default function Home() {
       <footer className="mt-12 text-center">
         <div className="inline-flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
           <Globe className="w-3 h-3" />
-          Powered by Gun.js P2P Network
+          P2P Price Mesh Active
         </div>
       </footer>
 
