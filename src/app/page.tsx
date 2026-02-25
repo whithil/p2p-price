@@ -1,11 +1,12 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { Scanner } from '@/components/Scanner';
 import { ProductCard } from '@/components/ProductCard';
 import { PriceForm } from '@/components/PriceForm';
+import { CartView, type CartItem } from '@/components/CartView';
 import { getGun, GUN_NAMESPACE, getDeviceId } from '@/lib/gun-client';
 import { Button } from '@/components/ui/button';
 import { 
@@ -18,18 +19,22 @@ import {
   BarChart3,
   Loader2,
   CheckCircle,
-  Receipt
+  Receipt,
+  ShoppingCart,
+  ArrowRight
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { scrapeNfce, type ScrapedProduct } from './actions/scrape-nfce';
+import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
-  const [view, setView] = useState<'home' | 'scanning' | 'details' | 'submitting' | 'nfce_processing' | 'nfce_summary'>('home');
+  const [view, setView] = useState<'home' | 'scanning' | 'details' | 'submitting' | 'nfce_processing' | 'nfce_summary' | 'cart'>('home');
   const [activeEan, setActiveEan] = useState<string | null>(null);
   const [product, setProduct] = useState<any>(null);
   const [prices, setPrices] = useState<Record<string, any>>({});
   const [scrapedData, setScrapedData] = useState<ScrapedProduct[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,6 +91,8 @@ export default function Home() {
     const timestamp = Date.now();
     let savedCount = 0;
 
+    const newCartItems: CartItem[] = [];
+
     items.forEach((item) => {
       if (!item.ean) return;
       savedCount++;
@@ -105,15 +112,73 @@ export default function Home() {
         deviceId,
         verified: true
       });
+
+      // 3. Prepare for cart
+      newCartItems.push({
+        ean: item.ean,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        brand: 'Invoice verified'
+      });
     });
+
+    setCart(prev => [...prev, ...newCartItems]);
 
     if (savedCount > 0) {
       toast({
         title: "Verified Data Injected",
-        description: `Successfully fed ${savedCount} verified price points into the P2P network.`
+        description: `Successfully fed ${savedCount} verified price points and added to your list.`
       });
     }
   };
+
+  const handleAddToCart = (item: CartItem) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.ean === item.ean);
+      if (existing) {
+        return prev.map(i => i.ean === item.ean ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [...prev, item];
+    });
+    toast({
+      title: "Added to List",
+      description: `${item.name} is now in your shopping list.`
+    });
+    setView('home');
+  };
+
+  const updateCartItem = (ean: string, updates: Partial<CartItem>) => {
+    setCart(prev => prev.map(item => {
+      if (item.ean === ean) {
+        const updatedItem = { ...item, ...updates };
+        
+        // If price is updated manually, contribute to GunDB
+        if (updates.price !== undefined) {
+          const gun = getGun();
+          const deviceId = getDeviceId();
+          const timestamp = Date.now();
+          const submissionId = `cart_adj_${timestamp}_${deviceId.substring(0, 5)}`;
+          
+          gun.get(GUN_NAMESPACE).get('prices').get(ean).get(submissionId).put({
+            value: updates.price,
+            timestamp,
+            deviceId,
+            manual_adj: true
+          });
+        }
+        
+        return updatedItem;
+      }
+      return item;
+    }));
+  };
+
+  const removeFromCart = (ean: string) => {
+    setCart(prev => prev.filter(i => i.ean !== ean));
+  };
+
+  const cartCount = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
 
   const handleReset = () => {
     setView('home');
@@ -124,17 +189,32 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col max-w-md mx-auto relative px-4 pb-10">
+    <div className="min-h-screen flex flex-col max-w-md mx-auto relative px-4 pb-24">
       <header className="flex items-center justify-between py-6">
-        <div className="flex flex-col">
-          <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2">
+        <div className="flex flex-col" onClick={() => setView('home')}>
+          <h1 className="text-xl font-black tracking-tighter text-white flex items-center gap-2 cursor-pointer">
             <span className="p-1.5 bg-primary rounded-lg">
                <BarChart3 className="w-5 h-5 text-white" />
             </span>
             P2P PRICE PULSE
           </h1>
         </div>
-        <NetworkStatus />
+        <div className="flex items-center gap-2">
+           {cart.length > 0 && view !== 'cart' && (
+             <Button 
+                variant="ghost" 
+                size="icon" 
+                className="relative glass rounded-full"
+                onClick={() => setView('cart')}
+              >
+               <ShoppingCart className="w-5 h-5 text-accent" />
+               <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-accent text-accent-foreground border-none">
+                 {cartCount}
+               </Badge>
+             </Button>
+           )}
+           <NetworkStatus />
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col">
@@ -148,9 +228,9 @@ export default function Home() {
             </div>
             
             <div className="space-y-3">
-              <h2 className="text-2xl font-bold text-white">Compare Smarter</h2>
+              <h2 className="text-2xl font-bold text-white">Your Shopping Companion</h2>
               <p className="text-muted-foreground text-sm max-w-[280px] leading-relaxed">
-                Scan barcodes or grocery receipt QR codes to feed the decentralized price consensus.
+                Scan products to build your list and help the community keep prices honest.
               </p>
             </div>
 
@@ -161,6 +241,17 @@ export default function Home() {
               >
                 Scan Product / Receipt
               </Button>
+              
+              {cart.length > 0 && (
+                <Button 
+                  onClick={() => setView('cart')}
+                  className="w-full h-14 bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 rounded-2xl font-bold"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  View List (${cart.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)})
+                </Button>
+              )}
+
               <Button 
                 variant="outline"
                 className="w-full h-14 glass text-muted-foreground hover:text-white rounded-2xl"
@@ -222,9 +313,11 @@ export default function Home() {
                 ))}
               </div>
 
-              <Button onClick={handleReset} className="w-full bg-primary hover:bg-primary/90 rounded-xl font-bold">
-                Finish Submission
-              </Button>
+              <div className="pt-2">
+                <Button onClick={() => setView('cart')} className="w-full bg-primary hover:bg-primary/90 rounded-xl font-bold flex items-center justify-center gap-2">
+                  Go to List <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -245,6 +338,13 @@ export default function Home() {
                 name={product.name}
                 brand={product.brand}
                 priceData={prices}
+                onAddToCart={(price) => handleAddToCart({
+                   ean: activeEan!,
+                   name: product.name,
+                   brand: product.brand,
+                   price,
+                   quantity: 1
+                })}
               />
             ) : (
               <div className="glass p-8 rounded-2xl text-center space-y-4">
@@ -262,25 +362,6 @@ export default function Home() {
                   <Plus className="w-4 h-4 mr-2" />
                   Add First Price
                 </Button>
-              </div>
-            )}
-
-            {product && (
-              <div className="flex flex-col gap-4">
-                <Button 
-                  onClick={() => setView('submitting')}
-                  className="w-full h-14 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-xl"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Submit New Price Observation
-                </Button>
-                
-                <div className="glass p-4 rounded-xl space-y-4">
-                   <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Price Intelligence</h4>
-                   <p className="text-xs text-muted-foreground leading-relaxed">
-                     Our algorithm uses MAD filtering and Gaussian weighting to exclude outliers, ensuring the consensus price remains reliable.
-                   </p>
-                </div>
               </div>
             )}
           </div>
@@ -309,14 +390,26 @@ export default function Home() {
             />
           </div>
         )}
+
+        {view === 'cart' && (
+           <CartView 
+              items={cart} 
+              onUpdate={updateCartItem} 
+              onRemove={removeFromCart} 
+              onBack={() => setView('home')}
+              onScanMore={() => setView('scanning')}
+           />
+        )}
       </main>
 
-      <footer className="mt-12 text-center">
-        <div className="inline-flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
-          <Globe className="w-3 h-3" />
-          P2P Price Mesh Active
-        </div>
-      </footer>
+      {view !== 'scanning' && view !== 'cart' && (
+        <footer className="mt-12 text-center">
+          <div className="inline-flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
+            <Globe className="w-3 h-3" />
+            P2P Price Mesh Active
+          </div>
+        </footer>
+      )}
 
       <Toaster />
     </div>
